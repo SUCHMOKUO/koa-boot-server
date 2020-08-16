@@ -1,8 +1,8 @@
 import "reflect-metadata";
+import { logger } from "./utils";
+import { Class, Prototype } from "./types";
 
-export interface ComponentClass {
-  new (): void;
-}
+export interface ComponentClass extends Class {}
 
 const instanceContainer = new Map<ComponentClass, unknown>();
 
@@ -12,10 +12,19 @@ export function Component(Class: ComponentClass) {
   }
 
   instanceContainer.set(Class, new Class());
+
+  logger.info("Component instantiated:", Class);
 }
 
-export function Inject(prototype: object, fieldName: string) {
+export function Inject(prototype: Prototype, fieldName: string) {
   const Class = Reflect.getMetadata("design:type", prototype, fieldName);
+
+  if (typeof Class === "undefined") {
+    throw new Error(
+      "cannot get inject type, probably due to circular dependency"
+    );
+  }
+
   const instance = getInstance(Class);
 
   Object.defineProperty(prototype, fieldName, {
@@ -26,6 +35,8 @@ export function Inject(prototype: object, fieldName: string) {
       throw new Error(`cannot set injected field '${fieldName}'`);
     },
   });
+
+  logger.info("Injected", Class, "to", prototype.constructor);
 }
 
 export function getInstance<T extends ComponentClass>(

@@ -2,6 +2,7 @@ import Koa from "koa";
 import path from "path";
 import { statSync, readdirSync } from "fs";
 import Router from "@koa/router";
+import { logger } from "./utils";
 
 export interface ApplicationConfig {
   port: number;
@@ -18,25 +19,26 @@ export class Application {
 
   private constructor() {}
 
-  static config(config: ApplicationConfig): typeof Application {
-    Application.port = config.port;
-    Application.components = config.components;
-
-    return Application;
-  }
-
-  static async run(): Promise<void> {
+  static async run(config: ApplicationConfig): Promise<void> {
     if (Application.running) {
       return;
     }
 
+    logger.info("Application initializing...");
+
     Application.running = true;
+
+    Application.port = config.port;
+    Application.components = config.components;
 
     Application.loadAllComponents();
     Application.registerMiddlewares();
 
     return new Promise((resolve) => {
-      Application.koa.listen(Application.port, resolve);
+      Application.koa.listen(Application.port, () => {
+        logger.info("Server running on port", Application.port);
+        resolve();
+      });
     });
   }
 
@@ -66,6 +68,7 @@ export class Application {
         .map((dir) => path.join(sourcePath, dir))
         .forEach(Application.loadComponent);
     } else if (stat.isFile() && Application.validateSourceFile(sourcePath)) {
+      logger.info("Load source:", sourcePath);
       require(sourcePath);
     }
   };

@@ -1,8 +1,8 @@
 {
   "name": "@koa-boot/server",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "build": "rm -rf ./dist && tsc"
   },
@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "@koa/router": "^9.4.0",
+    "chalk": "^4.1.0",
     "koa": "^2.13.0",
     "reflect-metadata": "^0.1.13"
   },
