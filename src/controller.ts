@@ -63,7 +63,7 @@ export function Controller(
   controllerDecorator(arg);
 }
 
-function RequestMethod(method: HttpMethod) {
+function requestMethodFactory(method: HttpMethod) {
   function decorator(url: string): MethodDecorator;
   function decorator(prototype: Prototype, methodName: string): void;
   function decorator(...args: any[]): void | MethodDecorator {
@@ -91,8 +91,8 @@ function RequestMethod(method: HttpMethod) {
   return decorator;
 }
 
-export const Get = RequestMethod("get");
-export const Post = RequestMethod("post");
-export const Delete = RequestMethod("delete");
-export const Put = RequestMethod("put");
-export const Patch = RequestMethod("patch");
+export const Get = requestMethodFactory("get");
+export const Post = requestMethodFactory("post");
+export const Delete = requestMethodFactory("delete");
+export const Put = requestMethodFactory("put");
+export const Patch = requestMethodFactory("patch");
