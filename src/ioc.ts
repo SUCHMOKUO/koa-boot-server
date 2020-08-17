@@ -20,9 +20,11 @@ export function Inject(prototype: Prototype, fieldName: string) {
   const Class = Reflect.getMetadata("design:type", prototype, fieldName);
 
   if (typeof Class === "undefined") {
-    throw new Error(
-      "cannot get inject type, probably due to circular dependency"
+    logger.error(
+      "Cannot get inject type, try enabling 'emitDecoratorMetadata' or check for circular dependency"
     );
+
+    throw new Error("cannot get inject type");
   }
 
   const instance = getInstance(Class);

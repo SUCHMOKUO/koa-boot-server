@@ -1,4 +1,4 @@
-import { blueBright, redBright, greenBright, gray } from "chalk";
+import { blueBright, redBright, greenBright, gray, cyanBright } from "chalk";
 
 function getFormatedDate(): string {
   const date = new Date();
@@ -23,5 +23,6 @@ function log(type: string, ...messages: any[]): void {
 
 export const logger = {
   info: (...messages: any[]) => log(blueBright("INFO"), ...messages),
-  debug: (...messages: any[]) => log(redBright("DEBUG"), ...messages),
+  debug: (...messages: any[]) => log(cyanBright("DEBUG"), ...messages),
+  error: (...messages: any[]) => log(redBright("ERROR"), ...messages),
 };

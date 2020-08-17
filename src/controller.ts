@@ -1,23 +1,25 @@
 import { Component, getInstance, ComponentClass } from "./ioc";
 import Router from "@koa/router";
 import { Application } from "./application";
-import { MethodDecorator } from "./types";
+import { MethodDecorator, Prototype } from "./types";
 
 interface ControllerClass extends ComponentClass {}
 
 type ControllerDecorator = (Class: ControllerClass) => void;
 
-type HttpMethod = "get" | "post" | "put" | "delete" | "options" | "patch";
+type HttpMethod = "get" | "post" | "put" | "delete" | "patch";
 
-type RouteMethod = {
+type ClassRouteMethod = {
   method: HttpMethod;
   url: string;
-  methodName: string;
+  classMethodName: string;
 };
 
-const ROUTE_METHODS = Symbol("ROUTES");
+const CLASS_ROUTE_METHODS = (Symbol(
+  "CLASS_ROUTE_METHODS"
+) as unknown) as string;
 
-let currentRouter: Router | undefined;
+let currentBuildingRouter: Router | undefined;
 
 function controllerDecorator(Class: ControllerClass): void {
   Component(Class);
@@ -25,25 +27,26 @@ function controllerDecorator(Class: ControllerClass): void {
   const instance = getInstance(Class);
   const prototype = Class.prototype;
 
-  const routeMethods: RouteMethod[] | undefined = prototype[ROUTE_METHODS];
+  const classRouteMethods: ClassRouteMethod[] | undefined =
+    prototype[CLASS_ROUTE_METHODS];
 
-  if (!routeMethods) {
+  if (!classRouteMethods) {
     return;
   }
 
-  if (!currentRouter) {
-    currentRouter = new Router();
+  if (!currentBuildingRouter) {
+    currentBuildingRouter = new Router();
   }
 
-  for (const routeMethod of routeMethods) {
-    const { method, url, methodName } = routeMethod;
-    const handler = prototype[methodName].bind(instance);
+  for (const classRouteMethod of classRouteMethods) {
+    const { method, url, classMethodName } = classRouteMethod;
+    const handlerFunc = prototype[classMethodName].bind(instance);
 
-    currentRouter[method](url, handler);
+    currentBuildingRouter[method](url, handlerFunc);
   }
 
-  Application.registerRouter(currentRouter);
-  currentRouter = undefined;
+  Application.registerRouter(currentBuildingRouter);
+  currentBuildingRouter = undefined;
 }
 
 export function Controller(Class: ControllerClass): void;
@@ -52,7 +55,7 @@ export function Controller(
   arg: ControllerClass | string
 ): void | ControllerDecorator {
   if (typeof arg === "string") {
-    currentRouter = new Router({ prefix: arg });
+    currentBuildingRouter = new Router({ prefix: arg });
 
     return controllerDecorator;
   }
@@ -62,18 +65,19 @@ export function Controller(
 
 function RequestMethod(method: HttpMethod) {
   function decorator(url: string): MethodDecorator;
-  function decorator(prototype: any, methodName: string): void;
+  function decorator(prototype: Prototype, methodName: string): void;
   function decorator(...args: any[]): void | MethodDecorator {
     let url = "/";
 
-    function _decorator(prototype: any, methodName: string) {
-      let routeMethods: RouteMethod[] = prototype[ROUTE_METHODS];
+    function _decorator(prototype: Prototype, methodName: string) {
+      let routeMethods: ClassRouteMethod[] | undefined =
+        prototype[CLASS_ROUTE_METHODS];
 
       if (!routeMethods) {
-        routeMethods = prototype[ROUTE_METHODS] = [];
+        routeMethods = prototype[CLASS_ROUTE_METHODS] = [];
       }
 
-      routeMethods.push({ method, url, methodName });
+      routeMethods.push({ method, url, classMethodName: methodName });
     }
 
     if (typeof args[0] === "string") {
@@ -91,5 +95,4 @@ export const Get = RequestMethod("get");
 export const Post = RequestMethod("post");
 export const Delete = RequestMethod("delete");
 export const Put = RequestMethod("put");
-export const Options = RequestMethod("options");
-export const patch = RequestMethod("patch");
+export const Patch = RequestMethod("patch");

@@ -9,4 +9,5 @@ export type MethodDecorator = (
 
 export interface Prototype {
   constructor: Function;
+  [key: string]: any;
 }

@@ -51,7 +51,15 @@ export class Application {
   }
 
   private static loadAllComponents(): void {
-    Application.components.forEach(Application.loadComponent);
+    const entryDir = require.main?.path;
+
+    if (!entryDir) {
+      throw new Error("cannot get project entry directory");
+    }
+
+    Application.components.forEach((relativePath) => {
+      Application.loadComponent(path.resolve(entryDir, relativePath));
+    });
   }
 
   private static registerMiddlewares(): void {
@@ -68,8 +76,10 @@ export class Application {
         .map((dir) => path.join(sourcePath, dir))
         .forEach(Application.loadComponent);
     } else if (stat.isFile() && Application.validateSourceFile(sourcePath)) {
-      logger.info("Load source:", sourcePath);
-      require(sourcePath);
+      if (!(sourcePath in require.cache)) {
+        logger.info("Load source:", sourcePath);
+        require(sourcePath);
+      }
     }
   };
 
