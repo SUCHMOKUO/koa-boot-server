@@ -1,6 +1,5 @@
-import { Component, ComponentClass } from "./ioc";
-
-export interface ServiceClass extends ComponentClass {}
+import { Component } from "./ioc";
+import { ServiceClass } from "./types";
 
 export function Service(Class: ServiceClass): void {
   Component(Class);

@@ -1,8 +1,6 @@
 import "reflect-metadata";
+import { ComponentClass, Prototype } from "./types";
 import { logger } from "./utils";
-import { Class, Prototype } from "./types";
-
-export interface ComponentClass extends Class {}
 
 const instanceContainer = new Map<ComponentClass, unknown>();
 

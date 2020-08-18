@@ -1,23 +1,16 @@
-import { Component, getInstance, ComponentClass } from "./ioc";
 import Router from "@koa/router";
 import { Application } from "./application";
-import { MethodDecorator, Prototype } from "./types";
-
-interface ControllerClass extends ComponentClass {}
-
-type ControllerDecorator = (Class: ControllerClass) => void;
-
-type HttpMethod = "get" | "post" | "put" | "delete" | "patch";
-
-type ClassRouteMethod = {
-  method: HttpMethod;
-  url: string;
-  classMethodName: string;
-};
-
-const CLASS_ROUTE_METHODS = (Symbol(
-  "CLASS_ROUTE_METHODS"
-) as unknown) as string;
+import { Component, getInstance } from "./ioc";
+import {
+  ClassRouteMethod,
+  CLASS_ROUTE_METHODS,
+  ControllerClass,
+  ControllerDecorator,
+  ControllerPrototype,
+  HttpMethod,
+  MethodDecorator,
+  ROUTE_MIDDLEWARES,
+} from "./types";
 
 let currentBuildingRouter: Router | undefined;
 
@@ -27,22 +20,26 @@ function controllerDecorator(Class: ControllerClass): void {
   const instance = getInstance(Class);
   const prototype = Class.prototype;
 
-  const classRouteMethods: ClassRouteMethod[] | undefined =
-    prototype[CLASS_ROUTE_METHODS];
+  const classRouteMethods = prototype[CLASS_ROUTE_METHODS];
 
   if (!classRouteMethods) {
     return;
   }
 
-  if (!currentBuildingRouter) {
-    currentBuildingRouter = new Router();
-  }
+  const allRouteMiddlewares = prototype[ROUTE_MIDDLEWARES] ?? [];
+
+  currentBuildingRouter = currentBuildingRouter ?? new Router();
 
   for (const classRouteMethod of classRouteMethods) {
     const { method, url, classMethodName } = classRouteMethod;
     const handlerFunc = prototype[classMethodName].bind(instance);
+    const middlewares =
+      allRouteMiddlewares.find(
+        (routeMiddlewares) =>
+          routeMiddlewares.classMethodName === classMethodName
+      )?.middlewares ?? [];
 
-    currentBuildingRouter[method](url, handlerFunc);
+    currentBuildingRouter[method](url, ...middlewares, handlerFunc);
   }
 
   Application.registerRouter(currentBuildingRouter);
@@ -64,20 +61,24 @@ export function Controller(
 }
 
 function requestMethodFactory(method: HttpMethod) {
-  function decorator(url: string): MethodDecorator;
-  function decorator(prototype: Prototype, methodName: string): void;
-  function decorator(...args: any[]): void | MethodDecorator {
+  function decorator(url: string): MethodDecorator<ControllerClass>;
+  function decorator(prototype: ControllerPrototype, methodName: string): void;
+  function decorator(...args: any[]): MethodDecorator<ControllerClass> | void {
     let url = "/";
 
-    function _decorator(prototype: Prototype, methodName: string) {
-      let routeMethods: ClassRouteMethod[] | undefined =
+    function _decorator(prototype: ControllerPrototype, methodName: string) {
+      let classRouteMethods: ClassRouteMethod[] | undefined =
         prototype[CLASS_ROUTE_METHODS];
 
-      if (!routeMethods) {
-        routeMethods = prototype[CLASS_ROUTE_METHODS] = [];
+      if (!classRouteMethods) {
+        classRouteMethods = prototype[CLASS_ROUTE_METHODS] = [];
       }
 
-      routeMethods.push({ method, url, classMethodName: methodName });
+      classRouteMethods.push({
+        method,
+        url,
+        classMethodName: methodName,
+      });
     }
 
     if (typeof args[0] === "string") {
