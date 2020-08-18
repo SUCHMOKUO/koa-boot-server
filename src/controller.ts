@@ -39,7 +39,7 @@ function controllerDecorator(Class: ControllerClass): void {
           routeMiddlewares.classMethodName === classMethodName
       )?.middlewares ?? [];
 
-    currentBuildingRouter[method](url, ...middlewares, handlerFunc);
+    currentBuildingRouter[method](url, ...middlewares.reverse(), handlerFunc);
   }
 
   Application.registerRouter(currentBuildingRouter);

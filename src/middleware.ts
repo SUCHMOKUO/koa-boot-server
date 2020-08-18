@@ -21,7 +21,7 @@ export function Middleware(
         middlewares: [middleware],
       });
     } else {
-      routeMiddlewares.middlewares.unshift(middleware);
+      routeMiddlewares.middlewares.push(middleware);
     }
   };
 }
