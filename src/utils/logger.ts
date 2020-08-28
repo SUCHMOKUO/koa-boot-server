@@ -1,4 +1,11 @@
-import { blueBright, redBright, greenBright, gray, cyanBright } from "chalk";
+import {
+  blueBright,
+  cyan,
+  cyanBright,
+  gray,
+  greenBright,
+  redBright,
+} from "chalk";
 
 function getFormatedDate(): string {
   const date = new Date();
@@ -15,6 +22,14 @@ function getFormatedDate(): string {
 }
 
 function log(type: string, ...messages: any[]): void {
+  messages = messages.map((message) => {
+    if (typeof message === "function") {
+      return cyan(message.name);
+    }
+
+    return message;
+  });
+
   console.log(
     `${greenBright("[Koa-Boot]")} ${type} ${gray(`(${getFormatedDate()})`)}`,
     ...messages
