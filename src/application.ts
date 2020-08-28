@@ -1,7 +1,7 @@
-import Koa from "koa";
-import path from "path";
-import { statSync, readdirSync } from "fs";
 import Router from "@koa/router";
+import { readdirSync, statSync } from "fs";
+import Koa, { Middleware } from "koa";
+import path from "path";
 import { logger } from "./utils";
 
 export interface ApplicationConfig {
@@ -46,20 +46,28 @@ export class Application {
     return Application.koa;
   }
 
+  static use(middleware: Middleware): void {
+    Application.koa.use(middleware);
+  }
+
   static registerRouter(router: Router): void {
     Application.mainRouter.use(router.routes(), router.allowedMethods());
   }
 
   private static loadAllComponents(): void {
-    const entryDir = require.main?.path;
-
-    if (!entryDir) {
-      throw new Error("cannot get project entry directory");
-    }
+    const entryDir = Application.getProjectEntryDir();
 
     Application.components.forEach((relativePath) => {
       Application.loadComponent(path.resolve(entryDir, relativePath));
     });
+  }
+
+  private static getProjectEntryDir(): string {
+    if (!require.main) {
+      throw new Error("cannot get project entry directory");
+    }
+
+    return require.main.path ?? path.dirname(require.main.filename);
   }
 
   private static registerMiddlewares(): void {
@@ -76,7 +84,10 @@ export class Application {
         .map((dir) => path.join(sourcePath, dir))
         .forEach(Application.loadComponent);
     } else if (stat.isFile() && Application.validateSourceFile(sourcePath)) {
-      if (!(sourcePath in require.cache)) {
+      if (
+        !require.cache[sourcePath] &&
+        require.extensions[path.extname(sourcePath)]
+      ) {
         logger.info("Load source:", sourcePath);
         require(sourcePath);
       }
