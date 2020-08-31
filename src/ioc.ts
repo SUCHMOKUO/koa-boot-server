@@ -11,7 +11,7 @@ export function Component(Class: ComponentClass) {
 
   instanceContainer.set(Class, new Class());
 
-  logger.info("Component instantiated:", Class);
+  logger.debug("Component instantiated:", Class);
 }
 
 export function Inject(prototype: Prototype, fieldName: string) {
@@ -36,7 +36,7 @@ export function Inject(prototype: Prototype, fieldName: string) {
     },
   });
 
-  logger.info("Injected", Class, "to", prototype.constructor);
+  logger.debug("Injected", Class, "to", prototype.constructor);
 }
 
 export function getInstance<T extends ComponentClass>(

@@ -20,45 +20,47 @@ export class Application {
   private constructor() {}
 
   static async run(config: ApplicationConfig): Promise<void> {
-    if (Application.running) {
+    if (this.running) {
       return;
     }
 
     logger.info("Application initializing...");
 
-    Application.running = true;
+    this.running = true;
 
-    Application.port = config.port;
-    Application.components = config.components;
+    this.port = config.port;
+    this.components = config.components;
 
-    Application.loadAllComponents();
-    Application.registerMiddlewares();
+    this.loadAllComponents();
+    this.registerMiddlewares();
 
     return new Promise((resolve) => {
-      Application.koa.listen(Application.port, () => {
-        logger.info("Server running on port", Application.port);
+      this.koa.listen(this.port, () => {
+        logger.info("Server running on port", this.port);
         resolve();
       });
     });
   }
 
   static getKoa(): Koa {
-    return Application.koa;
+    return this.koa;
   }
 
-  static use(middleware: Middleware): void {
-    Application.koa.use(middleware);
+  static use(middleware: Middleware): typeof Application {
+    this.koa.use(middleware);
+
+    return this;
   }
 
   static registerRouter(router: Router): void {
-    Application.mainRouter.use(router.routes(), router.allowedMethods());
+    this.mainRouter.use(router.routes(), router.allowedMethods());
   }
 
   private static loadAllComponents(): void {
-    const entryDir = Application.getProjectEntryDir();
+    const entryDir = this.getProjectEntryDir();
 
-    Application.components.forEach((relativePath) => {
-      Application.loadComponent(path.resolve(entryDir, relativePath));
+    this.components.forEach((relativePath) => {
+      this.loadComponent(path.resolve(entryDir, relativePath));
     });
   }
 
@@ -71,30 +73,30 @@ export class Application {
   }
 
   private static registerMiddlewares(): void {
-    const { koa, mainRouter } = Application;
+    const { koa, mainRouter } = this;
 
     koa.use(mainRouter.routes()).use(mainRouter.allowedMethods());
   }
 
-  private static loadComponent = (sourcePath: string): void => {
+  private static loadComponent(sourcePath: string): void {
     const stat = statSync(sourcePath);
 
     if (stat.isDirectory()) {
       readdirSync(sourcePath)
         .map((dir) => path.join(sourcePath, dir))
-        .forEach(Application.loadComponent);
-    } else if (stat.isFile() && Application.validateSourceFile(sourcePath)) {
+        .forEach((path) => this.loadComponent(path));
+    } else if (stat.isFile() && this.validateSourceFile(sourcePath)) {
       if (
         !require.cache[sourcePath] &&
         require.extensions[path.extname(sourcePath)]
       ) {
-        logger.info("Load source:", sourcePath);
+        logger.debug("Load source:", sourcePath);
         require(sourcePath);
       }
     }
-  };
+  }
 
   private static validateSourceFile(sourcePath: string): boolean {
-    return Application.sourceFileRegExp.test(sourcePath);
+    return this.sourceFileRegExp.test(sourcePath);
   }
 }

@@ -1,10 +1,10 @@
 import {
   blueBright,
   cyan,
-  cyanBright,
   gray,
   greenBright,
   redBright,
+  yellowBright,
 } from "chalk";
 
 function getFormatedDate(): string {
@@ -37,7 +37,11 @@ function log(type: string, ...messages: any[]): void {
 }
 
 export const logger = {
-  info: (...messages: any[]) => log(blueBright("INFO"), ...messages),
-  debug: (...messages: any[]) => log(cyanBright("DEBUG"), ...messages),
+  info: (...messages: any[]) => log(blueBright("INFO "), ...messages),
+  debug: (...messages: any[]) => {
+    if (process.env.NODE_ENV !== "production") {
+      log(yellowBright("DEBUG"), ...messages);
+    }
+  },
   error: (...messages: any[]) => log(redBright("ERROR"), ...messages),
 };
